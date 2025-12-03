@@ -83,10 +83,12 @@ Route::middleware(['auth', 'role:admin,owner'])->prefix('admin')->name('admin.')
 |--------------------------------------------------------------------------
 |
 | Routes khusus Owner (role: owner)
+| - Admin Management (promote/demote admins)
 | - Settings (koordinat kantor, radius, dll)
 |
 */
 Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->group(function () {
+    Route::get('/admin-management', \App\Livewire\Owner\AdminManagement::class)->name('admin-management');
     Route::get('/settings', function () {
         return view('owner.settings');
     })->name('settings');
