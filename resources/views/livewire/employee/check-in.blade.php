@@ -18,14 +18,14 @@
     <div class="px-4 -mt-4">
         <!-- Flash Messages -->
         @if (session()->has('success'))
-            <div class="mb-4 p-4 bg-success-50 border border-success-200 rounded-lg">
-                <p class="text-success-600 font-medium">{{ session('success') }}</p>
+            <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p class="text-green-600 font-medium">{{ session('success') }}</p>
             </div>
         @endif
 
         @if (session()->has('error'))
-            <div class="mb-4 p-4 bg-danger-50 border border-danger-200 rounded-lg">
-                <p class="text-danger-600 font-medium">{{ session('error') }}</p>
+            <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p class="text-red-600 font-medium">{{ session('error') }}</p>
             </div>
         @endif
 
@@ -83,32 +83,73 @@
                 <form wire:submit.prevent="submit">
                     <!-- Camera Input -->
                     <div class="mb-6">
-                        <label class="form-label">
-                            <span class="flex items-center">
+                        <label class="form-label mb-3 block">
+                            <span class="flex items-center text-sm font-medium text-gray-700">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
-                                Foto Selfie
+                                Foto Selfie (Wajib dari Kamera)
                             </span>
                         </label>
-                        <input type="file" accept="image/*" capture="user" wire:model="photo"
-                            class="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                        @error('photo') <span class="form-error">{{ $message }}</span> @enderror
+                        
+                        <!-- Camera Capture Interface -->
+                        <div class="space-y-3">
+                            <!-- Start Camera Button -->
+                            <button type="button" id="startCamera" 
+                                    class="w-full px-6 py-4 bg-blue-600 text-white text-lg rounded-xl font-bold hover:bg-blue-700 active:bg-blue-800 transition-all duration-200 flex items-center justify-center shadow-lg">
+                                <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                📹 Buka Kamera
+                            </button>
 
-                        @if ($photo)
-                            <div class="mt-3">
-                                <img src="{{ $photo->temporaryUrl() }}" class="w-full rounded-lg" alt="Preview">
+                            <!-- Camera Preview (hidden by default) -->
+                            <div id="cameraContainer" class="hidden space-y-3">
+                                <div class="relative rounded-xl overflow-hidden shadow-2xl border-4 border-blue-500">
+                                    <video id="videoPreview" autoplay playsinline class="w-full" style="transform: scaleX(-1); max-height: 400px;"></video>
+                                </div>
+                                <button type="button" id="capturePhoto"
+                                        class="w-full px-6 py-4 bg-green-600 text-white text-lg rounded-xl font-bold hover:bg-green-700 active:bg-green-800 transition-all duration-200 flex items-center justify-center shadow-lg">
+                                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                    </svg>
+                                    📸 Ambil Foto
+                                </button>
                             </div>
-                        @endif
+
+                            <!-- Canvas for capture (hidden) -->
+                            <canvas id="photoCanvas" class="hidden"></canvas>
+
+                            <!-- Photo Preview -->
+                            <div id="photoPreview" class="hidden space-y-3">
+                                <div class="relative rounded-xl overflow-hidden shadow-2xl">
+                                    <img id="capturedImage" src="" class="w-full border-4 border-green-500" alt="Preview" style="max-height: 400px; object-fit: cover;">
+                                    <div class="absolute top-3 right-3 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+                                        ✓ Foto Berhasil
+                                    </div>
+                                </div>
+                                <button type="button" id="retakePhoto"
+                                        class="w-full px-6 py-4 bg-orange-500 text-white text-lg rounded-xl font-bold hover:bg-orange-600 active:bg-orange-700 transition-all duration-200 flex items-center justify-center shadow-lg">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    🔄 Ambil Ulang
+                                </button>
+                            </div>
+
+                            <!-- Hidden input for Livewire -->
+                            <input type="hidden" id="photoData" wire:model="photoBase64">
+                        </div>
+                        @error('photoBase64') <span class="text-red-600 text-sm mt-2 block">{{ $message }}</span> @enderror
                     </div>
 
                     <!-- GPS Location (Auto-fetch) -->
                     <div class="mb-6">
-                        <label class="form-label">
-                            <span class="flex items-center">
+                        <label class="form-label mb-3 block">
+                            <span class="flex items-center text-sm font-medium text-gray-700">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -118,17 +159,16 @@
                                 Lokasi GPS
                             </span>
                         </label>
-                        <div class="p-4 bg-secondary-50 rounded-lg">
+                        <div class="p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
                             @if($latitude && $longitude)
-                                <p class="text-sm text-success-600 font-medium">✓ Lokasi terdeteksi</p>
-                                <p class="text-xs text-secondary-600 mt-1">{{ number_format($latitude, 6) }},
-                                    {{ number_format($longitude, 6) }}</p>
+                                <p class="text-sm text-green-600 font-medium">✓ Lokasi terdeteksi</p>
+                                <p class="text-xs text-gray-600 mt-1 font-mono">{{ number_format($latitude, 7) }}, {{ number_format($longitude, 7) }}</p>
                             @else
-                                <p class="text-sm text-secondary-600">Menunggu GPS...</p>
+                                <p class="text-sm text-gray-600">Menunggu GPS...</p>
                             @endif
                         </div>
-                        @error('latitude') <span class="form-error">{{ $message }}</span> @enderror
-                        @error('longitude') <span class="form-error">{{ $message }}</span> @enderror
+                        @error('latitude') <span class="text-red-600 text-sm mt-2 block">{{ $message }}</span> @enderror
+                        @error('longitude') <span class="text-red-600 text-sm mt-2 block">{{ $message }}</span> @enderror
                     </div>
 
                     <!-- Submit Button -->
@@ -145,9 +185,14 @@
                     </button>
                 </form>
 
-                <!-- Auto GPS Fetch Script -->
+                <!-- Camera & GPS Scripts -->
                 <script>
+                    let stream = null;
+                    let videoElement = null;
+                    let canvasElement = null;
+
                     document.addEventListener('DOMContentLoaded', function () {
+                        // Get GPS location
                         if (navigator.geolocation) {
                             navigator.geolocation.getCurrentPosition(
                                 function (position) {
@@ -167,8 +212,71 @@
                         } else {
                             alert('Browser Anda tidak mendukung GPS.');
                         }
+
+                        // Camera functionality
+                        videoElement = document.getElementById('videoPreview');
+                        canvasElement = document.getElementById('photoCanvas');
+
+                        // Start Camera Button
+                        document.getElementById('startCamera').addEventListener('click', async function() {
+                            try {
+                                stream = await navigator.mediaDevices.getUserMedia({
+                                    video: { facingMode: 'user', width: 1280, height: 720 },
+                                    audio: false
+                                });
+                                
+                                videoElement.srcObject = stream;
+                                document.getElementById('cameraContainer').classList.remove('hidden');
+                                document.getElementById('startCamera').classList.add('hidden');
+                            } catch (error) {
+                                console.error('Camera Error:', error);
+                                alert('Gagal mengakses kamera. Pastikan kamera aktif dan izinkan akses kamera.\n\nError: ' + error.message);
+                            }
+                        });
+
+                        // Capture Photo Button
+                        document.getElementById('capturePhoto').addEventListener('click', function() {
+                            const context = canvasElement.getContext('2d');
+                            canvasElement.width = videoElement.videoWidth;
+                            canvasElement.height = videoElement.videoHeight;
+                            
+                            // Mirror the image back
+                            context.translate(canvasElement.width, 0);
+                            context.scale(-1, 1);
+                            context.drawImage(videoElement, 0, 0);
+                            
+                            // Convert to base64
+                            const photoData = canvasElement.toDataURL('image/jpeg', 0.8);
+                            document.getElementById('photoData').value = photoData;
+                            document.getElementById('capturedImage').src = photoData;
+                            
+                            // Update UI
+                            document.getElementById('cameraContainer').classList.add('hidden');
+                            document.getElementById('photoPreview').classList.remove('hidden');
+                            
+                            // Stop camera stream
+                            if (stream) {
+                                stream.getTracks().forEach(track => track.stop());
+                            }
+
+                            // Trigger Livewire update
+                            @this.set('photoBase64', photoData);
+                        });
+
+                        // Retake Photo Button
+                        document.getElementById('retakePhoto').addEventListener('click', function() {
+                            document.getElementById('photoPreview').classList.add('hidden');
+                            document.getElementById('startCamera').classList.remove('hidden');
+                            @this.set('photoBase64', '');
+                        });
                     });
                 </script>
+            @else
+                <div class="text-center py-8">
+                    <div class="text-6xl mb-4">✅</div>
+                    <p class="text-lg text-gray-600">Absensi hari ini sudah lengkap</p>
+                    <p class="text-sm text-gray-500 mt-2">Terima kasih!</p>
+                </div>
             @endif
         </div>
     </div>

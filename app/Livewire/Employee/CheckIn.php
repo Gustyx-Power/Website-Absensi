@@ -14,7 +14,7 @@ class CheckIn extends Component
     use WithFileUploads;
 
     // Properties
-    public $photo;
+    public $photoBase64; // Base64 encoded photo dari webcam
     public $latitude;
     public $longitude;
     public $type = 'check_in'; // 'check_in' atau 'check_out'
@@ -22,16 +22,15 @@ class CheckIn extends Component
 
     // Validation rules
     protected $rules = [
-        'photo' => 'required|image|max:5120', // Max 5MB
+        'photoBase64' => 'required|string',
         'latitude' => 'required|numeric',
         'longitude' => 'required|numeric',
         'type' => 'required|in:check_in,check_out',
     ];
 
     protected $messages = [
-        'photo.required' => 'Foto selfie wajib diambil.',
-        'photo.image' => 'File harus berupa gambar.',
-        'photo.max' => 'Ukuran foto maksimal 5MB.',
+        'photoBase64.required' => 'Foto selfie wajib diambil dari kamera.',
+        'photoBase64.string' => 'Format foto tidak valid.',
         'latitude.required' => 'Lokasi GPS tidak terdeteksi. Aktifkan GPS Anda.',
         'longitude.required' => 'Lokasi GPS tidak terdeteksi. Aktifkan GPS Anda.',
         'type.required' => 'Tipe absensi tidak valid.',
@@ -112,8 +111,29 @@ class CheckIn extends Component
                 return;
             }
 
-            // Upload photo
-            $photoPath = $this->photo->store('attendance-photos', 'public');
+            // Decode base64 photo dan simpan
+            if (!preg_match('/^data:image\/(\w+);base64,/', $this->photoBase64, $type)) {
+                session()->flash('error', 'Format foto tidak valid.');
+                $this->isLoading = false;
+                return;
+            }
+
+            $data = substr($this->photoBase64, strpos($this->photoBase64, ',') + 1);
+            $data = base64_decode($data);
+
+            if ($data === false) {
+                session()->flash('error', 'Gagal memproses foto.');
+                $this->isLoading = false;
+                return;
+            }
+
+            // Generate unique filename
+            $extension = $type[1]; // jpeg, png, etc
+            $filename = 'attendance-' . auth()->id() . '-' . time() . '.' . $extension;
+            $photoPath = 'attendance-photos/' . $filename;
+
+            // Simpan ke storage/app/public
+            Storage::disk('public')->put($photoPath, $data);
 
             // Tentukan status (on_time atau late)
             $status = $this->determineStatus();
@@ -137,7 +157,7 @@ class CheckIn extends Component
             session()->flash('success', $message);
 
             // Reset form
-            $this->reset(['photo', 'latitude', 'longitude']);
+            $this->reset(['photoBase64', 'latitude', 'longitude']);
             $this->isLoading = false;
 
             // Refresh page untuk update status

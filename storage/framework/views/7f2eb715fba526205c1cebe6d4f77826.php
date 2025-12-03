@@ -1,3 +1,6 @@
+
+
+<?php $__env->startSection('content'); ?>
 <div>
     <!-- Header -->
     <div class="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-6 pt-8 pb-32">
@@ -92,4 +95,5 @@
             </button>
         </form>
     </div>
-</div><?php /**PATH C:\Users\putri\Documents\Project\Bored\wengset-absensi\resources\views/employee/profile.blade.php ENDPATH**/ ?>
+</div>
+<?php echo $__env->make('layouts.mobile', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\putri\Documents\Project\Bored\wengset-absensi\resources\views/employee/profile.blade.php ENDPATH**/ ?>
