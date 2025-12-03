@@ -98,6 +98,6 @@ class SocialiteController extends Controller
         request()->session()->invalidate();
         request()->session()->regenerateToken();
 
-        return redirect('/login')->with('success', 'Berhasil logout.');
+        return redirect()->route('login')->with('success', 'Berhasil logout.');
     }
 }

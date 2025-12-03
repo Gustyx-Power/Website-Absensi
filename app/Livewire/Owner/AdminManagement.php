@@ -122,6 +122,6 @@ class AdminManagement extends Component
         return view('livewire.owner.admin-management', [
             'admins' => $admins,
             'owner' => $owner,
-        ]);
+        ])->layout('layouts.app');
     }
 }
