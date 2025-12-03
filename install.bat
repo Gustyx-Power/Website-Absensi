@@ -23,8 +23,8 @@ echo.
 
 REM Check Composer
 echo [2/8] Checking Composer...
-composer --version >nul 2>&1
-if errorlevel 1 (
+where composer >nul 2>&1
+if %errorlevel% neq 0 (
     echo ERROR: Composer not found! Please install Composer from https://getcomposer.org
     pause
     exit /b 1
@@ -34,14 +34,14 @@ echo.
 
 REM Check Node/NPM
 echo [3/8] Checking Node.js and NPM...
-node --version >nul 2>&1
-if errorlevel 1 (
+where node >nul 2>&1
+if %errorlevel% neq 0 (
     echo ERROR: Node.js not found! Please install Node.js from https://nodejs.org
     pause
     exit /b 1
 )
-npm --version >nul 2>&1
-if errorlevel 1 (
+where npm >nul 2>&1
+if %errorlevel% neq 0 (
     echo ERROR: NPM not found! Please install Node.js from https://nodejs.org
     pause
     exit /b 1
@@ -49,9 +49,20 @@ if errorlevel 1 (
 echo    Node.js and NPM found
 echo.
 
+REM Create required Laravel directories
+echo [3.5/8] Creating Laravel directories...
+if not exist bootstrap\cache mkdir bootstrap\cache
+if not exist storage\framework\cache\data mkdir storage\framework\cache\data
+if not exist storage\framework\sessions mkdir storage\framework\sessions
+if not exist storage\framework\views mkdir storage\framework\views
+if not exist storage\logs mkdir storage\logs
+if not exist storage\app\public mkdir storage\app\public
+echo    Directories created
+echo.
+
 REM Install Composer dependencies
 echo [4/8] Installing Composer dependencies...
-composer install --no-interaction --prefer-dist --optimize-autoloader
+composer install --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs
 if errorlevel 1 (
     echo ERROR: Composer install failed!
     pause
