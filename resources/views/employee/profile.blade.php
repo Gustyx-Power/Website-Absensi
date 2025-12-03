@@ -1,3 +1,6 @@
+@extends('layouts.mobile')
+
+@section('content')
 <div>
     <!-- Header -->
     <div class="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-6 pt-8 pb-32">
